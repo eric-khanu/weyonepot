@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - DigiSusu{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 114, 198, 0.2);
+    }
+    .progress-ring {
+        transition: stroke-dashoffset 0.35s;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Welcome Header -->
+        <div class="mb-8 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        Welcome back, <span class="text-sl-green">{{ user.get_short_name }}</span>!
+                    </h1>
+                    <p class="mt-2 text-gray-600">
+                        <i class="fas fa-map-marker-alt text-sl-blue mr-2"></i>
+                        {{ user.city|default:"Freetown" }}, Sierra Leone
+                    </p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="refreshDashboard()" class="p-2 text-gray-500 hover:text-sl-blue transition rounded-full hover:bg-blue-50">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <a href="{% url 'accounts:profile' %}" class="bg-sl-green text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center">
+                        <i class="fas fa-user-edit mr-2"></i> Edit Profile
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-sl-green">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">Total Savings</p>
+                            <p class="text-2xl font-bold text-gray-900">Le {{ total_savings|floatformat:2 }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-sl-green/10 rounded-full flex items-center justify-center">
+                            <i class="fas fa-coins text-sl-green text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-green-600">
+                        <i class="fas fa-arrow-up mr-1"></i> +12.5% this month
+                    </div>
+                </div>
+                
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-sl-blue">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">Active Groups</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ groups|length }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-sl-blue/10 rounded-full flex items-center justify-center">
+                            <i class="fas fa-users text-sl-blue text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-blue-600">
+                        <i class="fas fa-plus-circle mr-1"></i> <a href="{% url 'groups:create' %}" class="hover:underline">Join new group</a>
+                    </div>
+                </div>
+                
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">Next Payout</p>
+                            <p class="text-2xl font-bold text-gray-900">
+                                {% if upcoming_payouts %}
+                                    Le {{ upcoming_payouts.0.amount|floatformat:2 }}
+                                {% else %}
+                                    Le 0.00
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center">
+                            <i class="fas fa-hand-holding-usd text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                    {% if upcoming_payouts %}
+                        <div class="mt-2 text-sm text-yellow-600">
+                            <i class="far fa-calendar mr-1"></i> {{ upcoming_payouts.0.date|date:"M d, Y" }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">Credit Score</p>
+                            <p class="text-2xl font-bold text-gray-900">750</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
+                            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-purple-600">
+                        <i class="fas fa-star mr-1"></i> Good standing
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content - Groups & Activity -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- My Groups -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden animate-slide-in">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-semibold text-gray-800">
+                                <i class="fas fa-users text-sl-green mr-2"></i> My Osusu Groups
+                            </h2>
+                            <a href="{% url 'groups:list' %}" class="text-sm text-sl-blue hover:text-sl-green transition">
+                                View All <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    {% if groups %}
+                        <div class="divide-y divide-gray-200">
+                            {% for membership in groups %}
+                                <div class="p-6 hover:bg-gray-50 transition">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-4">
+                                            {% if membership.group.logo %}
+                                                <img src="{{ membership.group.logo.url }}" alt="{{ membership.group.name }}" class="w-12 h-12 rounded-lg object-cover">
+                                            {% else %}
+                                                <div class="w-12 h-12 bg-gradient-green rounded-lg flex items-center justify-center text-white font-bold">
+                                                    {{ membership.group.name|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <h3 class="font-semibold text-gray-900">{{ membership.group.name }}</h3>
+                                                <p class="text-sm text-gray-500">
+                                                    <i class="fas fa-users mr-1"></i> {{ membership.group.current_members }} members
+                                                    <span class="mx-2">•</span>
+                                                    <i class="fas fa-coins mr-1"></i> Le {{ membership.group.contribution_amount }}/{{ membership.group.get_contribution_frequency_display|lower }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-semibold text-sl-green">
+                                                Cycle {{ membership.group.current_cycle }}/{{ membership.group.total_cycles }}
+                                            </div>
+                                            <a href="{% url 'groups:detail' membership.group.slug %}" class="text-xs text-sl-blue hover:text-sl-green transition">
+                                                View Details <i class="fas fa-chevron-right ml-1"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                            <span>Cycle Progress</span>
+                                            <span>{{ membership.group.current_cycle }}/{{ membership.group.total_cycles }} cycles</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            {% with progress=membership.group.current_cycle|divisibleby:membership.group.total_cycles|multiply:100 %}
+                                                <div class="bg-sl-green h-2 rounded-full" style="width: {{ progress }}%"></div>
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-12 text-center">
+                            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-users text-4xl text-gray-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">No Groups Yet</h3>
+                            <p class="text-gray-500 mb-6">Join an existing Osusu group or create your own to start saving!</p>
+                            <div class="flex justify-center space-x-4">
+                                <a href="{% url 'groups:create' %}" class="bg-sl-green text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+                                    <i class="fas fa-plus-circle mr-2"></i> Create Group
+                                </a>
+                                <a href="{% url 'groups:join' %}" class="bg-sl-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                                    <i class="fas fa-sign-in-alt mr-2"></i> Join Group
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Recent Transactions -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            <i class="fas fa-history text-sl-blue mr-2"></i> Recent Transactions
+                        </h2>
+                    </div>
+                    
+                    {% if recent_transactions %}
+                        <div class="divide-y divide-gray-200">
+                            {% for transaction in recent_transactions %}
+                                <div class="p-4 hover:bg-gray-50 transition">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 rounded-full 
+                                                {% if transaction.transaction_type == 'CONTRIBUTION' %}bg-green-100
+                                                {% elif transaction.transaction_type == 'PAYOUT' %}bg-blue-100
+                                                {% else %}bg-gray-100{% endif %} 
+                                                flex items-center justify-center">
+                                                <i class="fas 
+                                                    {% if transaction.transaction_type == 'CONTRIBUTION' %}fa-arrow-up text-sl-green
+                                                    {% elif transaction.transaction_type == 'PAYOUT' %}fa-arrow-down text-sl-blue
+                                                    {% else %}fa-exchange-alt text-gray-600{% endif %}
+                                                "></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-gray-900">{{ transaction.get_transaction_type_display }}</p>
+                                                <p class="text-xs text-gray-500">{{ transaction.group.name }} • {{ transaction.initiated_at|timesince }} ago</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-semibold 
+                                                {% if transaction.transaction_type == 'PAYOUT' %}text-sl-green
+                                                {% else %}text-gray-900{% endif %}">
+                                                Le {{ transaction.amount|floatformat:2 }}
+                                            </p>
+                                            <span class="text-xs px-2 py-1 rounded-full 
+                                                {% if transaction.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                                {% elif transaction.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                                {{ transaction.get_status_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="p-4 bg-gray-50 text-center">
+                            <a href="{% url 'transactions:list' %}" class="text-sm text-sl-blue hover:text-sl-green transition">
+                                View All Transactions <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-receipt text-4xl mb-2 text-gray-400"></i>
+                            <p>No transactions yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Upcoming Payouts -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            <i class="fas fa-gift text-sl-green mr-2"></i> Upcoming Payouts
+                        </h2>
+                    </div>
+                    
+                    {% if upcoming_payouts %}
+                        <div class="p-4 space-y-4">
+                            {% for payout in upcoming_payouts %}
+                                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ payout.group }}</p>
+                                        <p class="text-xs text-gray-500">{{ payout.date|date:"M d, Y" }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-sl-green">Le {{ payout.amount|floatformat:2 }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-calendar-day text-4xl mb-2 text-gray-400"></i>
+                            <p>No upcoming payouts</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-bolt text-sl-blue mr-2"></i> Quick Actions
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="quickContribute()" class="p-4 bg-sl-green/10 rounded-lg text-center hover:bg-sl-green/20 transition">
+                            <i class="fas fa-hand-holding-usd text-sl-green text-xl mb-1"></i>
+                            <span class="text-sm font-medium text-gray-700">Contribute</span>
+                        </button>
+                        <a href="{% url 'groups:create' %}" class="p-4 bg-sl-blue/10 rounded-lg text-center hover:bg-sl-blue/20 transition block">
+                            <i class="fas fa-plus-circle text-sl-blue text-xl mb-1"></i>
+                            <span class="text-sm font-medium text-gray-700">New Group</span>
+                        </a>
+                        <a href="{% url 'accounts:profile' %}" class="p-4 bg-purple-50 rounded-lg text-center hover:bg-purple-100 transition block">
+                            <i class="fas fa-user-cog text-purple-600 text-xl mb-1"></i>
+                            <span class="text-sm font-medium text-gray-700">Settings</span>
+                        </a>
+                        <a href="{% url 'transactions:list' %}" class="p-4 bg-yellow-50 rounded-lg text-center hover:bg-yellow-100 transition block">
+                            <i class="fas fa-file-invoice text-yellow-600 text-xl mb-1"></i>
+                            <span class="text-sm font-medium text-gray-700">Statement</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Security Status -->
+                <div class="bg-gradient-blue text-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold">Security Status</h2>
+                        <i class="fas fa-shield-alt text-2xl opacity-80"></i>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span>Phone Verified</span>
+                            {% if user.is_verified %}
+                                <i class="fas fa-check-circle text-green-300"></i>
+                            {% else %}
+                                <i class="fas fa-times-circle text-red-300"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>2FA Enabled</span>
+                            {% if user.two_factor_enabled %}
+                                <i class="fas fa-check-circle text-green-300"></i>
+                            {% else %}
+                                <a href="{% url 'accounts:setup-2fa' %}" class="text-sm underline hover:no-underline">Enable</a>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>Last Login</span>
+                            <span class="text-sm">{{ user.last_login|timesince }} ago</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'accounts:security' %}" class="mt-4 inline-block text-sm bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition">
+                        <i class="fas fa-lock mr-2"></i> Manage Security
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function quickContribute() {
+        // Show contribution modal or redirect
+        window.location.href = "{% url 'contributions:quick' %}";
+    }
+    
+    function refreshDashboard() {
+        location.reload();
+    }
+    
+    // Auto-refresh every 5 minutes
+    setTimeout(() => {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

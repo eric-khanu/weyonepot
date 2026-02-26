@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify OTP - DigiSusu{% endblock %}
+
+{% block extra_css %}
+<style>
+    .otp-input {
+        width: 3rem;
+        height: 3rem;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+    }
+    .otp-input:focus {
+        border-color: var(--sl-green);
+        box-shadow: 0 0 0 3px rgba(30, 181, 58, 0.1);
+        outline: none;
+    }
+    .otp-input:not(:placeholder-shown) {
+        border-color: var(--sl-blue);
+    }
+    .timer {
+        font-variant-numeric: tabular-nums;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-8 animate-fade-in">
+            <div class="flex justify-center mb-4">
+                <div class="w-20 h-20 bg-sl-green/10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-mobile-alt text-4xl text-sl-green"></i>
+                </div>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">Verify Your Phone</h1>
+            <p class="mt-2 text-gray-600">
+                We've sent a 6-digit code to <strong class="text-sl-blue">{{ phone_number }}</strong>
+            </p>
+        </div>
+        
+        <!-- OTP Form -->
+        <div class="bg-white rounded-xl shadow-md p-8 animate-slide-in">
+            <form method="post" id="otpForm" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- OTP Input Fields -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-4 text-center">
+                        Enter the 6-digit verification code
+                    </label>
+                    
+                    <div class="flex justify-center space-x-3" id="otpContainer">
+                        {% for i in "123456" %}
+                            <input type="text" 
+                                   maxlength="1" 
+                                   class="otp-input" 
+                                   id="otp{{ forloop.counter }}"
+                                   onkeyup="moveToNext(this, 'otp{{ forloop.counter|add:1 }}')"
+                                   onkeydown="handleBackspace(this, event)"
+                                   inputmode="numeric"
+                                   pattern="[0-9]*"
+                                   autocomplete="off">
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Hidden field for full OTP -->
+                    <input type="hidden" name="otp_code" id="otp_code">
+                    
+                    {% if form.otp_code.errors %}
+                        <p class="mt-2 text-sm text-red-600 text-center">{{ form.otp_code.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Timer and Resend -->
+                <div class="text-center space-y-2">
+                    <div class="text-sm text-gray-500 timer" id="timer">Code expires in <span id="timerDisplay">10:00</span></div>
+                    <button type="button" id="resendBtn" onclick="resendOTP()" 
+                            class="text-sm text-sl-blue hover:text-sl-green transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <i class="fas fa-redo-alt mr-1"></i> Resend Code
+                    </button>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" id="verifyBtn" class="w-full bg-sl-green text-white py-3 px-4 rounded-lg hover:bg-green-700 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-check-circle mr-2"></i> Verify & Continue
+                </button>
+            </form>
+            
+            <!-- Help Text -->
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">
+                    Didn't receive the code? 
+                    <button onclick="showHelp()" class="text-sl-blue hover:text-sl-green transition">
+                        Get help
+                    </button>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Security Note -->
+        <div class="mt-6 text-center text-sm text-gray-500">
+            <i class="fas fa-shield-alt text-sl-green mr-1"></i>
+            Never share this code with anyone. Our staff will never ask for it.
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Having Trouble?</h3>
+        <div class="space-y-4 text-gray-600">
+            <p><i class="fas fa-check-circle text-sl-green mr-2"></i> Check your phone signal</p>
+            <p><i class="fas fa-check-circle text-sl-green mr-2"></i> Ensure your phone number is correct</p>
+            <p><i class="fas fa-check-circle text-sl-green mr-2"></i> Wait a minute and try resending</p>
+            <p><i class="fas fa-check-circle text-sl-green mr-2"></i> Check if your SIM is working</p>
+        </div>
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeHelp()" class="px-4 py-2 bg-sl-blue text-white rounded-lg hover:bg-blue-700">
+                Got it
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Focus first input on load
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('otp1').focus();
+        startTimer(600); // 10 minutes in seconds
+    });
+    
+    // Move to next input
+    function moveToNext(current, nextId) {
+        if (current.value.length === 1) {
+            if (nextId && document.getElementById(nextId)) {
+                document.getElementById(nextId).focus();
+            }
+        }
+        updateOTPValue();
+    }
+    
+    // Handle backspace
+    function handleBackspace(current, event) {
+        if (event.key === 'Backspace' && current.value.length === 0) {
+            const prev = current.previousElementSibling;
+            if (prev) {
+                prev.focus();
+            }
+        }
+    }
+    
+    // Update hidden OTP field
+    function updateOTPValue() {
+        let otp = '';
+        for (let i = 1; i <= 6; i++) {
+            otp += document.getElementById('otp' + i).value || '';
+        }
+        document.getElementById('otp_code').value = otp;
+        
+        // Enable/disable verify button
+        const verifyBtn = document.getElementById('verifyBtn');
+        verifyBtn.disabled = otp.length !== 6;
+        
+        if (otp.length === 6) {
+            verifyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            verifyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+    
+    // Timer function
+    function startTimer(seconds) {
+        const timerDisplay = document.getElementById('timerDisplay');
+        const resendBtn = document.getElementById('resendBtn');
+        
+        const interval = setInterval(function() {
+            if (seconds <= 0) {
+                clearInterval(interval);
+                timerDisplay.textContent = 'Expired';
+                resendBtn.disabled = false;
+                resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+            
+            seconds--;
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+    
+    // Resend OTP
+    function resendOTP() {
+        const btn = document.getElementById('resendBtn');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        // AJAX call to resend OTP
+        fetch("{% url 'accounts:resend-otp' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                phone_number: '{{ phone_number }}',
+                purpose: '{{ purpose }}'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reset timer
+                startTimer(600);
+                
+                // Clear OTP inputs
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById('otp' + i).value = '';
+                }
+                document.getElementById('otp1').focus();
+                
+                // Show success message
+                alert('New code sent successfully!');
+            } else {
+                alert(data.message || 'Failed to resend code. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+    }
+    
+    // Help modal functions
+    function showHelp() {
+        document.getElementById('helpModal').style.display = 'flex';
+    }
+    
+    function closeHelp() {
+        document.getElementById('helpModal').style.display = 'none';
+    }
+    
+    // Close modal on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('helpModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    // Auto-submit when all fields are filled
+    document.querySelectorAll('.otp-input').forEach(input => {
+        input.addEventListener('keyup', function() {
+            const otp = document.getElementById('otp_code').value;
+            if (otp.length === 6) {
+                document.getElementById('otpForm').submit();
+            }
+        });
+    });
+</script>
+{% endblock %}

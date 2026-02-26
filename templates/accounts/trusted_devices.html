@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trusted Devices - DigiSusu{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Trusted Devices</h1>
+                    <p class="mt-2 text-gray-600">Manage devices that can access your account without 2FA</p>
+                </div>
+                <a href="{% url 'accounts:security' %}" class="text-sl-blue hover:text-sl-green transition">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Security
+                </a>
+            </div>
+        </div>
+        
+        <!-- Devices List -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden animate-slide-in">
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-gray-800">
+                        <i class="fas fa-laptop text-sl-green mr-2"></i> Your Devices
+                    </h2>
+                    <span class="text-sm text-gray-500">{{ devices|length }} devices</span>
+                </div>
+            </div>
+            
+            {% if devices %}
+                <div class="divide-y divide-gray-200">
+                    {% for device in devices %}
+                        <div class="p-6 hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start space-x-4">
+                                    <div class="w-12 h-12 
+                                        {% if device.device_type == 'MOBILE' %}bg-green-100
+                                        {% elif device.device_type == 'WEB' %}bg-blue-100
+                                        {% else %}bg-gray-100{% endif %}
+                                        rounded-lg flex items-center justify-center">
+                                        <i class="fas 
+                                            {% if device.device_type == 'MOBILE' %}fa-mobile-alt text-sl-green text-xl
+                                            {% elif device.device_type == 'WEB' %}fa-laptop text-sl-blue text-xl
+                                            {% else %}fa-globe text-gray-600 text-xl{% endif %}">
+                                        </i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center space-x-2">
+                                            <h3 class="font-semibold text-gray-900">
+                                                {% if device.device_name %}
+                                                    {{ device.device_name }}
+                                                {% else %}
+                                                    {{ device.get_device_type_display }}
+                                                {% endif %}
+                                            </h3>
+                                            {% if device.is_trusted %}
+                                                <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                                                    <i class="fas fa-check-circle mr-1"></i> Trusted
+                                                </span>
+                                            {% endif %}
+                                            {% if device.device_id == request.session.session_key %}
+                                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                                    Current
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mt-2 space-y-1">
+                                            <p class="text-sm text-gray-600">
+                                                <i class="fas fa-globe text-gray-400 w-4 mr-1"></i>
+                                                Last used: {{ device.last_used|timesince }} ago
+                                            </p>
+                                            <p class="text-sm text-gray-600">
+                                                <i class="fas fa-map-marker-alt text-gray-400 w-4 mr-1"></i>
+                                                {{ device.location|default:"Freetown, Sierra Leone" }}
+                                            </p>
+                                            {% if device.user_agent %}
+                                                <p class="text-xs text-gray-500">
+                                                    {{ device.user_agent|truncatechars:60 }}
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-2">
+                                    {% if not device.is_trusted and device.device_id != request.session.session_key %}
+                                        <form method="post" class="inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="trust">
+                                            <input type="hidden" name="device_id" value="{{ device.id }}">
+                                            <button type="submit" class="px-3 py-1 text-sm bg-sl-green text-white rounded hover:bg-green-700 transition">
+                                                Trust
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    
+                                    {% if device.is_trusted and device.device_id != request.session.session_key %}
+                                        <form method="post" class="inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="untrust">
+                                            <input type="hidden" name="device_id" value="{{ device.id }}">
+                                            <button type="submit" class="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                                                Untrust
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    
+                                    {% if device.device_id != request.session.session_key %}
+                                        <form method="post" class="inline" onsubmit="return confirm('Remove this device? It will need to verify again on next login.')">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="remove">
+                                            <input type="hidden" name="device_id" value="{{ device.id }}">
+                                            <button type="submit" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition">
+                                                Remove
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="p-12 text-center">
+                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-laptop text-4xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">No Devices Found</h3>
+                    <p class="text-gray-500">Devices you use to log in will appear here</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Info Box -->
+        <div class="mt-6 bg-blue-50 rounded-lg p-4">
+            <div class="flex items-start">
+                <i class="fas fa-info-circle text-sl-blue mt-1 mr-3"></i>
+                <div class="text-sm text-blue-800">
+                    <p class="font-medium mb-1">About trusted devices</p>
+                    <p>Trusted devices won't need to verify with 2FA for 30 days. Only trust devices you personally own and use regularly.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trust All Button -->
+        <div class="mt-6 text-center">
+            <button onclick="trustAllDevices()" class="text-sm text-sl-blue hover:text-sl-green transition">
+                <i class="fas fa-check-double mr-1"></i> Trust all my devices
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function trustAllDevices() {
+        if (confirm('Trust all your devices? They won't need 2FA for 30 days.')) {
+            // AJAX call to trust all devices
+            fetch("{% url 'accounts:trust-all-devices' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

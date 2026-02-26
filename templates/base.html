@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}We Yone Pot - Sierra Leone's Digital Osusu{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Inter', sans-serif; }
+        
+        :root {
+            --sl-green: #1EB53A;
+            --sl-blue: #0072C6; 
+            --sl-blue-dark: #0059a3;
+        }
+        
+        .bg-sl-blue { background-color: var(--sl-blue); }
+        .text-sl-blue { color: var(--sl-blue); }
+        .text-sl-green { color: var(--sl-green); }
+        .bg-gradient-blue { background: linear-gradient(135deg, var(--sl-blue) 0%, #1e88e5 100%); }
+        
+        .nav-link { transition: all 0.2s ease-in-out; }
+        .nav-link:hover { opacity: 0.8; transform: translateY(-1px); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    
+    <nav class="bg-sl-blue text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-24">
+                
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="flex items-center group">
+                        <img src="{% static 'images/logo/logo.png' %}" alt="We Yone Pot" class="h-16 w-auto md:h-20 transition-transform group-hover:scale-105">
+                        <div class="ml-3 leading-tight hidden sm:block">
+                            <span class="text-xl md:text-2xl font-extrabold block uppercase tracking-tighter">We Yone</span>
+                            <span class="text-xl md:text-2xl font-extrabold block uppercase tracking-tighter ml-7">Pot</span>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="/" class="nav-link text-sm font-semibold uppercase tracking-wide">Home</a>
+                    <a href="/about" class="nav-link text-sm font-semibold uppercase tracking-wide">About</a>
+                    <a href="/features" class="nav-link text-sm font-semibold uppercase tracking-wide">Features</a>
+                    <a href="/contact" class="nav-link text-sm font-semibold uppercase tracking-wide">Contact</a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <div class="relative group">
+                            <button class="flex items-center space-x-2 bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 rounded-xl transition">
+                                <i class="fas fa-user-circle text-lg"></i>
+                                <span class="text-sm font-medium">{{ user.phone_number }}</span>
+                                <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl hidden group-hover:block border border-gray-100 py-2 animate-fade-in text-gray-800">
+                                <a href="/dashboard" class="block px-4 py-2 hover:bg-gray-50 hover:text-sl-blue transition">
+                                    <i class="fas fa-th-large mr-2 opacity-50"></i> Dashboard
+                                </a>
+                                <a href="/profile" class="block px-4 py-2 hover:bg-gray-50 hover:text-sl-blue transition">
+                                    <i class="fas fa-cog mr-2 opacity-50"></i> Settings
+                                </a>
+                                <hr class="my-2 border-gray-100">
+                                <a href="/logout" class="block px-4 py-2 text-red-600 hover:bg-red-50 transition">
+                                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}" class="hidden sm:block text-sm font-bold hover:text-blue-100 transition">Login</a>
+                        <a href="{% url 'accounts:register' %}" class="bg-white text-sl-blue px-6 py-2.5 rounded-xl hover:shadow-lg transition duration-300 font-bold text-sm">
+                            Get Started
+                        </a>
+                    {% endif %}
+                    
+                    <button id="mobile-menu-button" class="md:hidden text-2xl focus:outline-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-sl-blue-dark border-t border-white/10 px-4 py-6 space-y-4">
+            <a href="/" class="block text-lg font-medium">Home</a>
+            <a href="/about" class="block text-lg font-medium">About</a>
+            <a href="/features" class="block text-lg font-medium">Features</a>
+            <a href="/contact" class="block text-lg font-medium">Contact</a>
+            {% if not user.is_authenticated %}
+                <hr class="border-white/10">
+                <a href="{% url 'accounts:login' %}" class="block text-lg font-medium">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <div class="h-1.5 w-full flex">
+        <div class="flex-1 bg-[#1EB53A]"></div>
+        <div class="flex-1 bg-white"></div>
+        <div class="flex-1 bg-[#0072C6]"></div>
+    </div>
+    
+    {% if messages %}
+        <div class="max-w-4xl mx-auto px-4 mt-6 w-full">
+            {% for message in messages %}
+                <div class="animate-fade-in flex items-center p-4 rounded-2xl shadow-sm border {% if message.tags == 'success' %}bg-green-50 text-green-800 border-green-200{% else %}bg-blue-50 text-blue-800 border-blue-200{% endif %}">
+                    <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-3 text-lg"></i>
+                    <span class="font-medium">{{ message }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="bg-slate-900 text-white border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+                <div class="space-y-6">
+                    <div class="flex items-center">
+                        <img src="{% static 'images/logo/logo.png' %}" alt="Logo" class="h-14 w-auto brightness-0 invert">
+                        <span class="ml-3 text-xl font-bold tracking-tight">We Yone Pot</span>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        The modern way to manage your Osusu groups. Secure, transparent, and built for the Sierra Leonean community.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-widest mb-6 text-sl-blue">Platform</h3>
+                    <ul class="space-y-4 text-gray-400 text-sm font-medium">
+                        <li><a href="#" class="hover:text-white transition">How it Works</a></li>
+                        <li><a href="#" class="hover:text-white transition">Security</a></li>
+                        <li><a href="#" class="hover:text-white transition">Trust & Safety</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-widest mb-6 text-sl-blue">Support</h3>
+                    <ul class="space-y-4 text-gray-400 text-sm">
+                        <li class="flex items-center group">
+                            <i class="fas fa-phone text-sl-blue mr-3 group-hover:scale-110 transition"></i> 
+                            <span>+232 76 123 456</span>
+                        </li>
+                        <li class="flex items-center group">
+                            <i class="fas fa-envelope text-sl-blue mr-3 group-hover:scale-110 transition"></i> 
+                            <span>support@weyonepot.sl</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-widest mb-6 text-sl-blue">Socials</h3>
+                    <div class="flex space-x-3">
+                        <a href="#" class="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center hover:bg-sl-blue transition-all duration-300">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center hover:bg-sl-blue transition-all duration-300">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center hover:bg-sl-blue transition-all duration-300">
+                            <i class="fab fa-whatsapp text-lg"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-white/5 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-500 text-xs gap-4">
+                <p>&copy; {% now "Y" %} We Yone Pot. Built with 🇸🇱 pride.</p>
+                <div class="flex space-x-6">
+                    <a href="#" class="hover:text-white">Privacy Policy</a>
+                    <a href="#" class="hover:text-white">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const btn = document.getElementById('mobile-menu-button');
+        const menu = document.getElementById('mobile-menu');
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>

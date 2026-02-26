@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Setup Two-Factor Authentication - DigiSusu{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-8 animate-fade-in">
+            <div class="flex justify-center mb-4">
+                <div class="w-20 h-20 bg-sl-green/10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-4xl text-sl-green"></i>
+                </div>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">Two-Factor Authentication</h1>
+            <p class="mt-2 text-gray-600">
+                Add an extra layer of security to your account
+            </p>
+        </div>
+        
+        <!-- Setup Form -->
+        <div class="bg-white rounded-xl shadow-md p-8 animate-slide-in">
+            <!-- Info Box -->
+            <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-sl-blue mt-1 mr-3"></i>
+                    <div class="text-sm text-blue-800">
+                        <p class="font-medium mb-1">How it works:</p>
+                        <p>After enabling 2FA, you'll need to enter a verification code sent to your phone each time you log in.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- 2FA Method Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        Choose verification method
+                    </label>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="method" value="SMS" class="h-4 w-4 text-sl-blue" checked>
+                            <div class="ml-3">
+                                <span class="block font-medium text-gray-900">SMS</span>
+                                <span class="text-sm text-gray-500">Receive codes via text message</span>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition opacity-50">
+                            <input type="radio" name="method" value="TOTP" disabled>
+                            <div class="ml-3">
+                                <span class="block font-medium text-gray-900">Authenticator App</span>
+                                <span class="text-sm text-gray-500">Coming soon</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Verification Code -->
+                <div>
+                    <label for="{{ form.otp_code.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-key text-sl-green mr-2"></i>Verification Code
+                    </label>
+                    <p class="text-sm text-gray-500 mb-2">We've sent a 6-digit code to {{ phone_number }}</p>
+                    {{ form.otp_code }}
+                    {% if form.otp_code.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.otp_code.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Resend Link -->
+                <div class="text-right">
+                    <button type="button" onclick="resendCode()" class="text-sm text-sl-blue hover:text-sl-green transition">
+                        <i class="fas fa-redo-alt mr-1"></i> Resend Code
+                    </button>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-sl-green text-white py-3 px-4 rounded-lg hover:bg-green-700 transition flex items-center justify-center">
+                    <i class="fas fa-shield-alt mr-2"></i> Enable 2FA
+                </button>
+            </form>
+            
+            <!-- Skip Link -->
+            <div class="mt-6 text-center">
+                <a href="{% url 'accounts:security' %}" class="text-sm text-gray-500 hover:text-gray-700 transition">
+                    I'll do this later
+                </a>
+            </div>
+        </div>
+        
+        <!-- Security Benefits -->
+        <div class="mt-6 grid grid-cols-2 gap-3 text-center text-sm">
+            <div>
+                <i class="fas fa-lock text-sl-green mb-1"></i>
+                <p class="text-gray-600">Prevent unauthorized access</p>
+            </div>
+            <div>
+                <i class="fas fa-shield-alt text-sl-blue mb-1"></i>
+                <p class="text-gray-600">Protect your savings</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function resendCode() {
+        fetch("{% url 'accounts:resend-2fa-setup' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('New verification code sent to your phone.');
+            } else {
+                alert('Failed to send code. Please try again.');
+            }
+        });
+    }
+    
+    // Auto-format OTP input
+    document.getElementById('id_otp_code')?.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+    });
+</script>
+{% endblock %}

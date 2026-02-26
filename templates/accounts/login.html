@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - We Yone Pot{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Subtle background texture */
+    .login-page {
+        background-color: #f8fafc;
+        background-image: radial-gradient(var(--sl-blue) 0.5px, transparent 0.5px);
+        background-size: 24px 24px;
+        background-opacity: 0.05;
+    }
+    
+    .login-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(243, 244, 246, 0.5) 100%);
+        backdrop-filter: blur(10px);
+    }
+    
+    .flag-line {
+        height: 4px;
+        background: linear-gradient(90deg, #1EB53A 0%, #FFFFFF 50%, #0072C6 100%);
+    }
+
+    /* Input focus ring custom color */
+    .focus-ring-sl:focus {
+        border-color: var(--sl-blue);
+        box-shadow: 0 0 0 4px rgba(0, 114, 198, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen login-page flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full animate-fade-in">
+        
+        <div class="text-center mb-10">
+            <a href="/" class="inline-block transform transition hover:scale-105">
+                <img src="{% static 'images/logo/logo.png' %}" alt="We Yone Pot" class="h-24 w-auto mx-auto drop-shadow-sm">
+            </a>
+            <h2 class="mt-6 text-3xl font-extrabold text-gray-900 tracking-tight">Kushashe!</h2>
+            <p class="mt-2 text-gray-500 font-medium">
+                Manage your group savings securely
+            </p>
+        </div>
+        
+        <div class="login-card bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+            <div class="flag-line"></div>
+            
+            <div class="p-8 sm:p-10">
+                <form class="space-y-6" method="post" action="{% url 'accounts:login' %}">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="phone_number" class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                            Phone Number
+                        </label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <span class="text-gray-400 font-semibold border-r border-gray-200 pr-3">+232</span>
+                            </div>
+                            <input type="tel" 
+                                   name="phone_number" 
+                                   id="phone_number" 
+                                   required 
+                                   class="block w-full pl-20 pr-4 py-4 border border-gray-200 rounded-2xl focus-ring-sl transition-all duration-200 bg-gray-50/50 text-gray-900 font-medium"
+                                   placeholder="76 123 456"
+                                   value="{{ form.phone_number.value|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center justify-between mb-2 ml-1">
+                            <label for="password" class="block text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                Password
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-gray-300"></i>
+                            </div>
+                            <input type="password" 
+                                   name="password" 
+                                   id="password" 
+                                   required 
+                                   class="block w-full pl-11 pr-12 py-4 border border-gray-200 rounded-2xl focus-ring-sl transition-all duration-200 bg-gray-50/50"
+                                   placeholder="••••••••">
+                            <button type="button" 
+                                    onclick="togglePassword()" 
+                                    class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-sl-blue transition">
+                                <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="checkbox" name="remember_me" id="remember_me" 
+                                   class="h-5 w-5 text-sl-blue focus:ring-sl-blue border-gray-300 rounded-lg transition">
+                            <span class="ml-2 text-sm text-gray-600 group-hover:text-gray-900 transition">Keep me signed in</span>
+                        </label>
+                        <a href="{% url 'accounts:request-otp' %}" class="text-sm font-bold text-sl-blue hover:text-sl-blue-dark transition">
+                            Forgot?
+                        </a>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full flex justify-center items-center py-4 px-4 border border-transparent rounded-2xl shadow-lg text-lg font-bold text-white bg-sl-blue hover:bg-sl-blue-dark transition-all duration-300 transform hover:-translate-y-1 active:scale-95">
+                        <i class="fas fa-fingerprint mr-3 opacity-50"></i>
+                        Sign In to My Pot
+                    </button>
+                </form>
+                
+                <div class="mt-8 relative">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-100"></div></div>
+                    <div class="relative flex justify-center text-xs uppercase tracking-widest"><span class="px-4 bg-white text-gray-400 font-bold">New Here?</span></div>
+                </div>
+
+                <div class="mt-6">
+                    <a href="{% url 'accounts:register' %}" class="w-full flex justify-center items-center py-4 border-2 border-sl-green text-sl-green hover:bg-sl-green hover:text-white rounded-2xl text-base font-bold transition-all duration-300">
+                        Create Your Digital Osusu
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-10 text-center">
+            <div class="inline-flex items-center px-4 py-2 bg-white/80 rounded-full border border-gray-100 shadow-sm">
+                <i class="fas fa-shield-check text-sl-green mr-2"></i>
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-tighter">Verified Secure for Sierra Leone</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const icon = document.getElementById('togglePasswordIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
+    // Modern Phone Formatter (76 123 456)
+    document.getElementById('phone_number')?.addEventListener('input', function(e) {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,3})(\d{0,3})/);
+        if (!x) return;
+        e.target.value = !x[2] ? x[1] : x[1] + ' ' + x[2] + (x[3] ? ' ' + x[3] : '');
+    });
+</script>
+{% endblock %}

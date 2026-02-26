@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Join We Yone Pot - Register{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-bar { transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    
+    .password-strength-container {
+        height: 6px;
+        background-color: #f3f4f6;
+        border-radius: 99px;
+        overflow: hidden;
+    }
+    
+    .password-strength {
+        height: 100%;
+        width: 0%;
+        transition: all 0.4s ease;
+    }
+
+    .strength-weak { background-color: #ef4444; width: 25%; }
+    .strength-fair { background-color: #f59e0b; width: 50%; }
+    .strength-good { background-color: #3b82f6; width: 75%; }
+    .strength-strong { background-color: #1EB53A; width: 100%; }
+
+    .input-focus-effect:focus {
+        border-color: var(--sl-blue);
+        background-color: white;
+        box-shadow: 0 0 0 4px rgba(0, 114, 198, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50/50">
+    <div class="max-w-md w-full animate-fade-in">
+        
+        <div class="text-center mb-8">
+            <a href="/" class="inline-block transform transition hover:scale-105">
+                <img src="{% static 'images/logo/logo.png' %}" alt="We Yone Pot" class="h-20 w-auto mx-auto drop-shadow-sm">
+            </a>
+            <h2 class="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">Begin Your Journey</h2>
+            <p class="mt-2 text-gray-500 font-medium">Sierra Leone's most trusted digital osusu.</p>
+        </div>
+        
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+            <div class="bg-gray-50/80 px-8 py-6 border-b border-gray-100">
+                <div class="flex justify-between items-end mb-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Current Progress</p>
+                        <span class="text-sm font-bold text-sl-blue">Step 1: Account Setup</span>
+                    </div>
+                    <span class="text-sm font-black text-gray-300">33%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                    <div class="bg-sl-blue h-1.5 rounded-full progress-bar" style="width: 33%"></div>
+                </div>
+            </div>
+
+            <form class="p-8 space-y-5" method="post" action="{% url 'accounts:register' %}">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="phone_number" class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                        Phone Number
+                    </label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none border-r border-gray-200 pr-3">
+                            <span class="text-gray-400 font-bold">+232</span>
+                        </div>
+                        <input type="tel" name="phone_number" id="phone_number" required 
+                               class="block w-full pl-20 pr-4 py-3.5 border border-gray-200 rounded-2xl input-focus-effect transition bg-gray-50/50 font-medium"
+                               placeholder="76 123 456">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">First Name</label>
+                        <input type="text" name="first_name" required 
+                               class="block w-full px-4 py-3.5 border border-gray-200 rounded-2xl input-focus-effect transition bg-gray-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Last Name</label>
+                        <input type="text" name="last_name" required 
+                               class="block w-full px-4 py-3.5 border border-gray-200 rounded-2xl input-focus-effect transition bg-gray-50/50">
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="password" class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                            Secure Password
+                        </label>
+                        <div class="relative">
+                            <input type="password" id="password" name="password" required 
+                                   class="block w-full px-4 py-3.5 border border-gray-200 rounded-2xl input-focus-effect transition bg-gray-50/50"
+                                   onkeyup="checkPasswordStrength()">
+                            <button type="button" onclick="togglePassword('password', 'toggleIcon1')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-sl-blue transition">
+                                <i class="fas fa-eye" id="toggleIcon1"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="mt-3 px-1">
+                            <div class="flex justify-between mb-1.5">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase">Security Level</span>
+                                <span id="strengthText" class="text-[10px] font-black uppercase text-gray-300">Waiting...</span>
+                            </div>
+                            <div class="password-strength-container">
+                                <div id="strengthBar" class="password-strength"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Confirm Password</label>
+                        <div class="relative">
+                            <input type="password" id="password2" name="password2" required 
+                                   class="block w-full px-4 py-3.5 border border-gray-200 rounded-2xl input-focus-effect transition bg-gray-50/50"
+                                   onkeyup="checkPasswordMatch()">
+                            <div id="matchBox" class="absolute inset-y-0 right-0 pr-4 flex items-center hidden">
+                                <i class="fas fa-check-circle text-sl-green text-lg animate-bounce-short"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-start bg-sl-blue/5 p-4 rounded-2xl border border-sl-blue/10">
+                    <div class="flex items-center h-5">
+                        <input type="checkbox" id="agree" required class="h-5 w-5 text-sl-blue border-gray-300 rounded-lg focus:ring-sl-blue transition cursor-pointer">
+                    </div>
+                    <label for="agree" class="ml-3 text-xs text-gray-600 leading-relaxed cursor-pointer">
+                        I agree to the <a href="#" class="text-sl-blue font-bold hover:underline">Terms of Service</a> and confirm I am a resident of Sierra Leone.
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full py-4 px-4 bg-sl-blue text-white text-lg font-bold rounded-2xl shadow-xl hover:bg-sl-blue-dark transition-all duration-300 transform hover:-translate-y-1 active:scale-95 flex items-center justify-center">
+                    Continue to OTP Verification
+                    <i class="fas fa-arrow-right ml-2 text-sm opacity-70"></i>
+                </button>
+                
+                <p class="text-center text-sm text-gray-500 font-medium">
+                    Already a member? 
+                    <a href="{% url 'accounts:login' %}" class="text-sl-green font-bold hover:text-sl-green-dark transition">Sign In</a>
+                </p>
+            </form>
+        </div>
+        
+        <div class="mt-8 flex justify-center items-center space-x-8 opacity-40 grayscale hover:grayscale-0 transition duration-500">
+            <div class="flex flex-col items-center">
+                <i class="fas fa-shield-alt text-xl mb-1"></i>
+                <span class="text-[9px] font-bold uppercase tracking-widest">256-Bit SSL</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <i class="fas fa-fingerprint text-xl mb-1"></i>
+                <span class="text-[9px] font-bold uppercase tracking-widest">Biometric Ready</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <i class="fas fa-university text-xl mb-1"></i>
+                <span class="text-[9px] font-bold uppercase tracking-widest">Bank Standard</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword(id, iconId) {
+        const el = document.getElementById(id);
+        const icon = document.getElementById(iconId);
+        el.type = el.type === 'password' ? 'text' : 'password';
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+    }
+
+    function checkPasswordStrength() {
+        const val = document.getElementById('password').value;
+        const bar = document.getElementById('strengthBar');
+        const txt = document.getElementById('strengthText');
+        let s = 0;
+        if (val.length >= 8) s++;
+        if (/[A-Z]/.test(val)) s++;
+        if (/[0-9]/.test(val)) s++;
+        if (/[^A-Za-z0-9]/.test(val)) s++;
+
+        bar.className = 'password-strength';
+        const levels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+        const classes = ['', 'strength-weak', 'strength-fair', 'strength-good', 'strength-strong'];
+        
+        if (val.length > 0) {
+            bar.classList.add(classes[s] || 'strength-weak');
+            txt.innerText = levels[s] || 'Very Weak';
+            txt.style.color = s > 2 ? '#1EB53A' : '#9ca3af';
+        } else {
+            txt.innerText = 'Waiting...';
+            txt.style.color = '#d1d5db';
+        }
+    }
+
+    function checkPasswordMatch() {
+        const p1 = document.getElementById('password').value;
+        const p2 = document.getElementById('password2').value;
+        const box = document.getElementById('matchBox');
+        if (p1 && p1 === p2) box.classList.remove('hidden');
+        else box.classList.add('hidden');
+    }
+
+    // Modern Sierra Leone Phone Formatter
+    document.getElementById('phone_number').addEventListener('input', function(e) {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,3})(\d{0,3})/);
+        if (!x) return;
+        e.target.value = !x[2] ? x[1] : x[1] + ' ' + x[2] + (x[3] ? ' ' + x[3] : '');
+    });
+</script>
+{% endblock %}

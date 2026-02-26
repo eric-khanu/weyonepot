@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Two-Factor Authentication - DigiSusu{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-8 animate-fade-in">
+            <div class="flex justify-center mb-4">
+                <div class="w-20 h-20 bg-sl-blue/10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-4xl text-sl-blue"></i>
+                </div>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">Two-Factor Authentication</h1>
+            <p class="mt-2 text-gray-600">
+                Enter the 6-digit code sent to <strong class="text-sl-green">{{ phone_number }}</strong>
+            </p>
+        </div>
+        
+        <!-- 2FA Form -->
+        <div class="bg-white rounded-xl shadow-md p-8 animate-slide-in">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- OTP Input -->
+                <div>
+                    <label for="{{ form.otp_code.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Authentication Code
+                    </label>
+                    {{ form.otp_code }}
+                    {% if form.otp_code.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.otp_code.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Trust this device option -->
+                <div class="flex items-center">
+                    <input type="checkbox" name="trust_device" id="trust_device" class="h-4 w-4 text-sl-green focus:ring-sl-green border-gray-300 rounded">
+                    <label for="trust_device" class="ml-2 block text-sm text-gray-700">
+                        Trust this device for 30 days
+                    </label>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-sl-blue text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
+                    <i class="fas fa-check-circle mr-2"></i> Verify & Login
+                </button>
+            </form>
+            
+            <!-- Alternative Options -->
+            <div class="mt-6 space-y-3">
+                <div class="text-center">
+                    <button onclick="resend2FA()" class="text-sm text-sl-green hover:text-sl-blue transition">
+                        <i class="fas fa-redo-alt mr-1"></i> Resend Code
+                    </button>
+                </div>
+                <div class="text-center">
+                    <a href="{% url 'accounts:login' %}" class="text-sm text-gray-500 hover:text-gray-700 transition">
+                        <i class="fas fa-arrow-left mr-1"></i> Back to Login
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recovery Options -->
+        <div class="mt-6 bg-yellow-50 rounded-lg p-4">
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+                <div>
+                    <p class="text-sm text-yellow-800 font-medium">Having trouble?</p>
+                    <p class="text-xs text-yellow-700 mt-1">
+                        If you can't access your authentication method, 
+                        <a href="{% url 'accounts:2fa-recovery' %}" class="underline hover:no-underline">use recovery codes</a> 
+                        or <a href="{% url 'accounts:contact-support' %}" class="underline hover:no-underline">contact support</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function resend2FA() {
+        fetch("{% url 'accounts:resend-2fa' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('New verification code sent to your phone.');
+            } else {
+                alert('Failed to send code. Please try again.');
+            }
+        });
+    }
+    
+    // Auto-format OTP input
+    document.getElementById('id_otp_code')?.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+    });
+</script>
+{% endblock %}
