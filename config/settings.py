@@ -303,30 +303,33 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# 1. Define the directory first (fixes the NameError)
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)
 
-# Logging
+# 2. Updated Logging Dictionary
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
     },
     'handlers': {
+        # This handler sends logs to the Render Console/Terminal
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        # Keeping your file handlers just in case, but console is better for Render
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOGS_DIR, 'app.log'),  # Changed this
-            'maxBytes': 10485760,  # 10MB
-            'backupCount': 10,
-            'formatter': 'verbose',
-        },
-        'security': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOGS_DIR, 'security.log'),  # Changed this
+            'filename': os.path.join(LOGS_DIR, 'app.log'),
             'maxBytes': 10485760,
             'backupCount': 10,
             'formatter': 'verbose',
@@ -334,12 +337,12 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['console', 'file'], # Send to both!
             'level': 'INFO',
             'propagate': True,
         },
         'accounts': {
-            'handlers': ['file', 'security'],
+            'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
         },
