@@ -15,11 +15,14 @@ from pathlib import Path
 from datetime import timedelta
 import environ
 from dotenv import load_dotenv
+env = environ.Env()
 
 load_dotenv()
 
 # Use getenv to avoid crashes if the key is missing during build
-FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY")
+# To this:
+FIELD_ENCRYPTION_KEY = env('FIELD_ENCRYPTION_KEY', default='JTOLULnKbOnhrMIskVEayIYMK7OE0yZGOgmcO0aWIzg=')
+
 
 
 
