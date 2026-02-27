@@ -14,6 +14,12 @@ import os
 from pathlib import Path
 from datetime import timedelta
 import environ
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Use getenv to avoid crashes if the key is missing during build
+FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY")
 
 
 
@@ -28,17 +34,35 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # SECURITY WARNING: keep the secret key used in production secret!
+env = environ.Env()
+
 SECRET_KEY = env('SECRET_KEY')
 
+
+ALLOWED_HOSTS = [
+    'www.weyonepot.com',
+    'weyonepot.com',
+    'weyonepot.onrender.com', # This allows the internal Render link too
+    'localhost',
+]
+
+
+# This tells Django to trust the 'https' header sent by Render/Cloudflare
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOW_CREDENTIALS = True
+
+# Also add this for Django's built-in CSRF protection
+CSRF_TRUSTED_ORIGINS = [
+    'https://www.weyonepot.com',
+    'https://weyonepot.com',
+    'https://weyonepot.onrender.com'
+]
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=False)
-
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
-
-
-
 
 # Application definition
 
@@ -66,6 +90,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     # Security
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     
     # CORS
     'corsheaders.middleware.CorsMiddleware',
@@ -147,13 +172,13 @@ AUTH_PASSWORD_VALIDATORS = [
 # Custom user model
 AUTH_USER_MODEL = 'accounts.User'
 
+
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-FIELD_ENCRYPTION_KEY = 'JTOLULnKbOnhrMIskVEayIYMK7OE0yZGOgmcO0aWIzg='
 
 
 # Internationalization
@@ -170,8 +195,8 @@ USE_TZ = True
 
 # Static files
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = 'media/'
@@ -278,11 +303,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Create logs directory if it doesn't exist
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-if not os.path.exists(LOGS_DIR):
-    os.makedirs(LOGS_DIR)
 
 # Logging
 LOGGING = {
